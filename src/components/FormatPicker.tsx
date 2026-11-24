@@ -17,13 +17,20 @@ export function FormatPicker({
   only?: OutputMime[]
   label?: string
 }) {
-  const supported = useFormats().filter((f) => !only || only.includes(f))
+  const detected = useFormats()
+  // JPG and PNG work everywhere, so show them while detection runs.
+  const all = detected ?? (['image/jpeg', 'image/png'] as OutputMime[])
+  const supported = all.filter((f) => !only || only.includes(f))
+  const missingWebp = !!detected && !detected.includes('image/webp') && (!only || only.includes('image/webp'))
   const options: { value: FormatChoice; label: string }[] = [
     ...(allowOriginal ? [{ value: 'original' as const, label: 'Same' }] : []),
     ...supported.map((f) => ({ value: f, label: FORMAT_LABEL[f] })),
   ]
   return (
-    <Field label={label}>
+    <Field
+      label={label}
+      hint={missingWebp ? 'This browser can’t save WebP. Use Chrome, Edge or Firefox if you need WebP.' : undefined}
+    >
       {() => <Segmented label={label} value={value} onChange={onChange} options={options} />}
     </Field>
   )
