@@ -5,7 +5,7 @@ import { collectErrors, downloadBytes, expectNoErrors, imageSize, makeImage, upl
 test.describe('batch tools', () => {
   test('compress hits a 100 KB target', async ({ page }) => {
     const errors = collectErrors(page)
-    await page.goto('./#/compress')
+    await page.goto('./compress-image/')
     const photo = await makeImage(page, 'photo', 2400, 1600)
     expect(photo.length).toBeGreaterThan(400 * 1024)
     await upload(page, [{ name: 'holiday.jpg', buffer: photo }])
@@ -21,16 +21,17 @@ test.describe('batch tools', () => {
   })
 
   test('compress keeps fixed dimensions when resizing is off', async ({ page }) => {
-    await page.goto('./#/compress')
+    await page.goto('./compress-image/')
     await upload(page, [{ name: 'a.jpg', buffer: await makeImage(page, 'photo', 1200, 800) }])
     await page.getByRole('button', { name: '50 KB' }).click()
-    await page.getByLabel('Reduce dimensions if needed').uncheck({ force: true })
+    await page.getByText('Reduce dimensions if needed').click()
+    await expect(page.getByLabel('Reduce dimensions if needed')).not.toBeChecked()
     await page.getByRole('button', { name: 'Compress image' }).click()
     await expect(page.getByText(/1200×800 → .*1200×800/)).toBeVisible()
   })
 
   test('resize to a width keeps the aspect ratio and zips batches', async ({ page }) => {
-    await page.goto('./#/resize')
+    await page.goto('./resize-image/')
     const a = await makeImage(page, 'photo', 2000, 1000)
     const b = await makeImage(page, 'photo', 1000, 2000)
     await upload(page, [
@@ -48,7 +49,7 @@ test.describe('batch tools', () => {
   })
 
   test('resize to an exact preset crops to fill', async ({ page }) => {
-    await page.goto('./#/resize')
+    await page.goto('./resize-image/')
     await upload(page, [{ name: 'x.jpg', buffer: await makeImage(page, 'photo', 1600, 900) }])
     await page.getByLabel('Preset').selectOption({ label: 'Instagram post 1080×1080' })
     await page.getByRole('button', { name: 'Resize image' }).click()
@@ -58,9 +59,15 @@ test.describe('batch tools', () => {
     expect(await imageSize(page, bytes, 'image/jpeg')).toEqual({ width: 1080, height: 1080 })
   })
 
-  test('convert PNG with transparency to WebP and JPG', async ({ page }) => {
-    await page.goto('./#/convert')
+  test('convert PNG with transparency to WebP and JPG', async ({ page, browserName }) => {
+    await page.goto('./convert-image/')
     await upload(page, [{ name: 'logo.png', buffer: await makeImage(page, 'transparent', 400, 300, 'image/png'), mimeType: 'image/png' }])
+    if (browserName === 'webkit') {
+      // Safari cannot encode WebP from a canvas; the option must be hidden and explained.
+      await expect(page.getByRole('radio', { name: 'WebP' })).toHaveCount(0)
+      await expect(page.getByText(/can.t save WebP/)).toBeVisible()
+      return
+    }
     await page.getByRole('radio', { name: 'WebP' }).click()
     await page.getByRole('button', { name: 'Convert image' }).click()
     let dl = page.waitForEvent('download')
@@ -82,7 +89,7 @@ test.describe('batch tools', () => {
 
 test('crop to a square', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('./#/crop')
+  await page.goto('./crop-image/')
   await upload(page, [{ name: 'c.jpg', buffer: await makeImage(page, 'photo', 1200, 800) }])
   await page.getByLabel('Aspect ratio').selectOption('1')
   await page.getByRole('button', { name: 'Rotate right' }).click()
@@ -101,7 +108,7 @@ test('crop to a square', async ({ page }) => {
 
 test('passport photo for a BD job form is 300×300 and under 100 KB', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('./#/passport')
+  await page.goto('./passport-photo/')
   await upload(page, [{ name: 'me.jpg', buffer: await makeImage(page, 'portrait', 1200, 1600) }])
   await page.getByLabel('Photo size').selectOption('bd-job')
   await expect(page.getByLabel('Max file size (optional)')).toHaveValue('100')
@@ -116,7 +123,7 @@ test('passport photo for a BD job form is 300×300 and under 100 KB', async ({ p
 })
 
 test('passport print sheet as PDF', async ({ page }) => {
-  await page.goto('./#/passport')
+  await page.goto('./passport-photo/')
   await upload(page, [{ name: 'me.jpg', buffer: await makeImage(page, 'portrait', 1200, 1600) }])
   await expect(page.getByText('Up to 8 fit on this paper.')).toBeVisible()
   const dl = page.waitForEvent('download')
@@ -127,9 +134,9 @@ test('passport print sheet as PDF', async ({ page }) => {
 
 test('signature becomes 300×80 under 60 KB', async ({ page }) => {
   const errors = collectErrors(page)
-  await page.goto('./#/signature')
+  await page.goto('./signature-resize/')
   await upload(page, [{ name: 'sign.jpg', buffer: await makeImage(page, 'signature', 1600, 900) }])
-  await expect(page.getByText('300×80 px')).toBeVisible()
+  await expect(page.getByText('300×80 px', { exact: true })).toBeVisible()
   const dl = page.waitForEvent('download')
   await page.getByRole('button', { name: 'Download JPG' }).click()
   const bytes = await downloadBytes(await dl)
@@ -139,7 +146,7 @@ test('signature becomes 300×80 under 60 KB', async ({ page }) => {
 })
 
 test('images to PDF keeps page order and count', async ({ page }) => {
-  await page.goto('./#/pdf')
+  await page.goto('./images-to-pdf/')
   await upload(page, [
     { name: '1.jpg', buffer: await makeImage(page, 'photo', 800, 1100) },
     { name: '2.jpg', buffer: await makeImage(page, 'photo', 1100, 800) },

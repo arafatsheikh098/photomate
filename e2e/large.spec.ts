@@ -7,7 +7,7 @@ test.describe('very large photos (48 MP)', () => {
 
   test('passport photo', async ({ page }) => {
     const errors = collectErrors(page)
-    await page.goto('./#/passport')
+    await page.goto('./passport-photo/')
     await upload(page, [{ name: 'phone.jpg', buffer: await makeImage(page, 'portrait', 6000, 8000) }])
     await page.getByLabel('Photo size').selectOption('bd-job')
     const dl = page.waitForEvent('download')
@@ -20,7 +20,7 @@ test.describe('very large photos (48 MP)', () => {
 
   test('crop keeps full resolution', async ({ page }) => {
     const errors = collectErrors(page)
-    await page.goto('./#/crop')
+    await page.goto('./crop-image/')
     await upload(page, [{ name: 'phone.jpg', buffer: await makeImage(page, 'portrait', 6000, 8000) }])
     const btn = page.getByRole('button', { name: /^Download \d+×\d+$/ })
     await expect(btn).toBeEnabled()
@@ -33,7 +33,7 @@ test.describe('very large photos (48 MP)', () => {
 
   test('compress to 200 KB', async ({ page }) => {
     const errors = collectErrors(page)
-    await page.goto('./#/compress')
+    await page.goto('./compress-image/')
     await upload(page, [{ name: 'phone.jpg', buffer: await makeImage(page, 'portrait', 6000, 8000) }])
     await page.getByRole('button', { name: '200 KB' }).click()
     await page.getByRole('button', { name: 'Compress image' }).click()
