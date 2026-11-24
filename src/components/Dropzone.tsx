@@ -1,7 +1,7 @@
 import { ImagePlus } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { IMAGE_ACCEPT, isImageFile } from '../lib/files'
-import { cx } from './ui'
+import { cx } from './cx'
 
 /**
  * File picker that also accepts drag-and-drop and pasting from the clipboard.
@@ -24,7 +24,9 @@ export function Dropzone({
   const input = useRef<HTMLInputElement>(null)
   const [over, setOver] = useState(false)
   const filesRef = useRef(onFiles)
-  filesRef.current = onFiles
+  useEffect(() => {
+    filesRef.current = onFiles
+  })
 
   const take = (list: FileList | File[] | null | undefined) => {
     const files = Array.from(list ?? []).filter(isImageFile)

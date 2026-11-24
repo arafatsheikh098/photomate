@@ -1,7 +1,7 @@
 import { Lock, Search, WifiOff, Zap } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { cx } from '../components/ui'
+import { cx } from '../components/cx'
 import { TOOLS } from './registry'
 
 const PERKS = [

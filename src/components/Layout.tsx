@@ -2,7 +2,7 @@ import { Lock, Moon, Sun } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { TOOLS } from '../tools/registry'
-import { cx } from './ui'
+import { cx } from './cx'
 
 const REPO_URL = 'https://github.com/arafatsheikh098/chobi'
 

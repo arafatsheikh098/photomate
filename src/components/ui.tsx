@@ -2,8 +2,7 @@ import { LoaderCircle, TriangleExclamationPoint, Info } from 'lucide-react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { useId } from 'react'
 
-const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
-export { cx }
+import { cx } from './cx'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
