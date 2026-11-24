@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { HashRouter, Link, Route, Routes } from 'react-router-dom'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { Layout, ToolHeader } from './components/Layout'
 import { Progress } from './components/ui'
 import Home from './tools/Home'
@@ -31,7 +32,9 @@ export default function App() {
                 element={
                   <>
                     <ToolHeader title={t.name} description={t.blurb} icon={t.icon} tint={t.tint} />
-                    <t.Component />
+                    <ErrorBoundary key={t.slug}>
+                      <t.Component />
+                    </ErrorBoundary>
                   </>
                 }
               />
