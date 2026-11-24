@@ -120,8 +120,10 @@ export default function BackgroundTool() {
                 label="Model quality"
                 value={quality}
                 onChange={(q) => {
+                  // Changing model mid-run would leave the label out of sync with the result.
+                  if (busy) return
                   setQuality(q)
-                  if (file && !busy) start(file, q)
+                  if (file) start(file, q)
                 }}
                 options={[
                   { value: 'standard', label: MODEL_INFO.standard.label },

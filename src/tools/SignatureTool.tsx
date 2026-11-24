@@ -110,7 +110,13 @@ export default function SignatureTool() {
       if (transparent) {
         blob = await encode(result.canvas, 'image/png')
       } else if (maxKB) {
-        blob = (await encodeToTarget((q) => encode(result.canvas, 'image/jpeg', q), Number(maxKB) * 1024, { lossy: true, allowResize: false })).blob
+        const r = await encodeToTarget((q) => encode(result.canvas, 'image/jpeg', q), Number(maxKB) * 1024, { lossy: true, allowResize: false })
+        blob = r.blob
+        if (!r.fits) {
+          setLastSize(`${formatBytes(blob.size)} — could not get under ${maxKB} KB`)
+          downloadBlob(blob, renameFile(file.name, 'jpg', '-signature'))
+          return
+        }
       } else {
         blob = await encode(result.canvas, 'image/jpeg', 0.95)
       }

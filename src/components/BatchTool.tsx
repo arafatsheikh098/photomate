@@ -112,7 +112,11 @@ export function BatchTool({
         img = await loadImage(it.file)
         const res = await process(it.file, img)
         const orig = originalSizeOf(img)
-        if (orig.width !== img.width) {
+        if (res.blob === it.file) {
+          // The untouched original was kept, so report its real dimensions.
+          res.width = orig.width
+          res.height = orig.height
+        } else if (orig.width !== img.width) {
           const scaled = `Very large photo: reduced from ${orig.width}×${orig.height} to fit this browser.`
           res.note = res.note ? `${scaled} ${res.note}` : scaled
         }
@@ -150,7 +154,7 @@ export function BatchTool({
     setZipping(true)
     try {
       const zip = await zipFiles(finished.map((i) => ({ name: i.result!.name, blob: i.result!.blob })))
-      downloadBlob(zip, `chobi-${actionLabel.toLowerCase()}-${finished.length}-images.zip`)
+      downloadBlob(zip, `photomate-${actionLabel.toLowerCase()}-${finished.length}-images.zip`)
     } finally {
       setZipping(false)
     }

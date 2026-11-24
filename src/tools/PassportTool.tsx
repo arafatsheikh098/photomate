@@ -1,5 +1,5 @@
 import { Download, FileDown, Printer, RotateCcw, Sparkles } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Area } from 'react-easy-crop'
 import { CanvasPreview } from '../components/CanvasPreview'
 import { CropStage, initialCrop, type CropState } from '../components/CropStage'
@@ -48,7 +48,7 @@ export default function PassportTool() {
   const [file, setFile] = useState<File | null>(null)
   const [original, setOriginal] = useState<ImageBitmap | null>(null)
   const [presetId, setPresetId] = useState(PHOTO_PRESETS[0].id)
-  const [custom, setCustom] = useState({ width: 35, height: 45, unit: 'mm' as 'mm' | 'px' })
+  const [custom, setCustom] = useState<{ width: number | ''; height: number | ''; unit: 'mm' | 'px' }>({ width: 35, height: 45, unit: 'mm' })
   const [maxKB, setMaxKB] = useState<number | ''>('')
   const [state, setState] = useState<CropState>(initialCrop)
   const [area, setArea] = useState<Area | null>(null)
@@ -65,6 +65,10 @@ export default function PassportTool() {
   const [busy, setBusy] = useState<string | null>(null)
   const [lastSize, setLastSize] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const currentFile = useRef<File | null>(null)
+  useEffect(() => {
+    currentFile.current = file
+  }, [file])
 
   useEffect(() => () => original?.close(), [original])
   useEffect(() => () => cutout?.close(), [cutout])
@@ -73,14 +77,17 @@ export default function PassportTool() {
     const p = PHOTO_PRESETS.find((x) => x.id === presetId)
     if (p) return p
     const px = custom.unit === 'px'
+    // Fall back to sensible values while a field is empty or out of range mid-typing.
+    const cw = Math.min(Math.max(Number(custom.width) || (px ? 300 : 35), 1), px ? 4000 : 300)
+    const ch = Math.min(Math.max(Number(custom.height) || (px ? 300 : 45), 1), px ? 4000 : 300)
     return {
       id: 'custom',
       label: 'Custom',
       detail: '',
-      widthPx: px ? custom.width : mmToPx(custom.width, 300),
-      heightPx: px ? custom.height : mmToPx(custom.height, 300),
-      widthMm: px ? undefined : custom.width,
-      heightMm: px ? undefined : custom.height,
+      widthPx: Math.round(px ? cw : mmToPx(cw, 300)),
+      heightPx: Math.round(px ? ch : mmToPx(ch, 300)),
+      widthMm: px ? undefined : cw,
+      heightMm: px ? undefined : ch,
       dpi: 300,
       head: [0.6, 0.75],
       background: '#ffffff',
@@ -124,16 +131,24 @@ export default function PassportTool() {
 
   const runRemoval = async () => {
     if (!file) return
+    const forFile = file
     setBgError(null)
     setBgProgress({ stage: 'download', fraction: null })
     try {
-      const blob = await removeBackground(file, 'standard', setBgProgress)
-      setCutout(await createImageBitmap(blob))
+      const blob = await removeBackground(forFile, 'standard', setBgProgress)
+      const bmp = await createImageBitmap(blob)
+      // The user may have switched photos while the model was running.
+      if (currentFile.current !== forFile) {
+        bmp.close()
+        return
+      }
+      setCutout(bmp)
     } catch (e) {
+      if (currentFile.current !== forFile) return
       setBgError(e instanceof Error ? e.message : 'Background removal failed.')
       setReplaceBg(false)
     } finally {
-      setBgProgress(null)
+      if (currentFile.current === forFile) setBgProgress(null)
     }
   }
 
@@ -147,10 +162,15 @@ export default function PassportTool() {
       if (maxKB) {
         const r = await encodeToTarget((q) => encode(finalPhoto, 'image/jpeg', q), Number(maxKB) * 1024, { lossy: true, allowResize: false, minQuality: 0.3 })
         blob = r.blob
+        setLastSize(
+          r.fits
+            ? `Last download: ${formatBytes(blob.size)}`
+            : `Could not get under ${maxKB} KB without ruining the photo; saved at ${formatBytes(blob.size)}.`,
+        )
       } else {
         blob = await encode(finalPhoto, 'image/jpeg', 0.95)
+        setLastSize(`Last download: ${formatBytes(blob.size)}`)
       }
-      setLastSize(formatBytes(blob.size))
       downloadBlob(blob, `${stem}-${preset.widthPx}x${preset.heightPx}.jpg`)
     } finally {
       setBusy(null)
@@ -249,8 +269,8 @@ export default function PassportTool() {
           </Field>
           {presetId === 'custom' && (
             <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-2">
-              <Field label="Width">{(id) => <NumberInput id={id} value={custom.width} min={1} onChange={(v) => setCustom((c) => ({ ...c, width: Number(v) || 1 }))} />}</Field>
-              <Field label="Height">{(id) => <NumberInput id={id} value={custom.height} min={1} onChange={(v) => setCustom((c) => ({ ...c, height: Number(v) || 1 }))} />}</Field>
+              <Field label="Width">{(id) => <NumberInput id={id} value={custom.width} min={1} onChange={(v) => setCustom((c) => ({ ...c, width: v }))} />}</Field>
+              <Field label="Height">{(id) => <NumberInput id={id} value={custom.height} min={1} onChange={(v) => setCustom((c) => ({ ...c, height: v }))} />}</Field>
               <Segmented label="Unit" value={custom.unit} onChange={(unit) => setCustom((c) => ({ ...c, unit }))} options={[{ value: 'mm', label: 'mm' }, { value: 'px', label: 'px' }]} />
             </div>
           )}
@@ -305,7 +325,7 @@ export default function PassportTool() {
           <Button className="w-full" onClick={downloadPhoto} busy={busy === 'photo'} disabled={!finalPhoto} icon={<Download className="size-4" />}>
             Download photo (JPG)
           </Button>
-          {lastSize && <p className="text-center text-xs text-slate-500">Last download: {lastSize}</p>}
+          {lastSize && <p className="text-center text-xs text-slate-500">{lastSize}</p>}
         </Card>
 
         {printable && (
@@ -342,6 +362,11 @@ export default function PassportTool() {
           onClick={() => {
             setFile(null)
             setOriginal(null)
+            setCutout(null)
+            setReplaceBg(false)
+            setBgProgress(null)
+            setBgError(null)
+            setLastSize(null)
           }}
         >
           Use another photo

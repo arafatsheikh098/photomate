@@ -43,7 +43,19 @@ export async function loadImage(file: Blob, opts: { maxSide?: number } = {}): Pr
   const target = fitWithin(full, MAX_CANVAS_PIXELS, opts.maxSide)
   if (target.width === full.width && target.height === full.height) return full
   try {
-    const small = await createImageBitmap(full, { resizeWidth: target.width, resizeHeight: target.height, resizeQuality: 'high' })
+    let small: ImageBitmap | undefined
+    try {
+      small = await createImageBitmap(full, { resizeWidth: target.width, resizeHeight: target.height, resizeQuality: 'high' })
+    } catch {
+      /* resize options unsupported */
+    }
+    // Older Safari ignores the resize options and hands back a full-size bitmap.
+    if (!small || small.width !== target.width || small.height !== target.height) {
+      small?.close()
+      const c = createCanvas(target.width, target.height)
+      context2d(c).drawImage(full, 0, 0, target.width, target.height)
+      small = await createImageBitmap(c)
+    }
     originalSizes.set(small, { width: full.width, height: full.height })
     return small
   } finally {
