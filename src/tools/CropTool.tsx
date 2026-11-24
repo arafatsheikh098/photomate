@@ -4,9 +4,9 @@ import type { Area } from 'react-easy-crop'
 import { CropStage, initialCrop, type CropState } from '../components/CropStage'
 import { Dropzone } from '../components/Dropzone'
 import { FormatPicker, type FormatChoice } from '../components/FormatPicker'
-import { Button, Card, Field, Select, Slider } from '../components/ui'
+import { Alert, Button, Card, Field, Select, Slider } from '../components/ui'
 import { useObjectUrl } from '../hooks/useObjectUrl'
-import { cropTransformed, encode, loadImage } from '../lib/canvas'
+import { cropTransformed, encode, loadImage, percentToPixels } from '../lib/canvas'
 import { downloadBlob } from '../lib/files'
 import { extFor, isLossy, renameFile } from '../lib/format'
 import { resolveFormat } from '../lib/output'
@@ -34,18 +34,28 @@ export default function CropTool() {
   const [format, setFormat] = useState<FormatChoice>('original')
   const [quality, setQuality] = useState(92)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => () => img?.close(), [img])
 
   if (!file || !url) {
     return (
-      <Dropzone
-        onFiles={async ([f]) => {
-          setImg(await loadImage(f))
-          setFile(f)
-          setState(initialCrop)
-        }}
-      />
+      <div className="space-y-4">
+        <Dropzone
+          onFiles={async ([f]) => {
+            setError(null)
+            try {
+              setImg(await loadImage(f))
+            } catch (e) {
+              setError(e instanceof Error ? e.message : 'Could not open this image.')
+              return
+            }
+            setFile(f)
+            setState(initialCrop)
+          }}
+        />
+        {error && <Alert>{error}</Alert>}
+      </div>
     )
   }
 
@@ -59,10 +69,15 @@ export default function CropTool() {
   const save = async () => {
     if (!img || !area) return
     setSaving(true)
+    setError(null)
     try {
-      const canvas = cropTransformed(img, area, state.rotation, { h: state.flipH, v: state.flipV })
+      // The area is in percent so it maps onto the decoded copy even if it was scaled down.
+      const px = percentToPixels(img, area, state.rotation)
+      const canvas = cropTransformed(img, px, state.rotation, { h: state.flipH, v: state.flipV })
       const mime = await resolveFormat(format, file)
       downloadBlob(await encode(canvas, mime, quality / 100), renameFile(file.name, extFor(mime), '-cropped'))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not save the crop.')
     } finally {
       setSaving(false)
     }
@@ -75,7 +90,7 @@ export default function CropTool() {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="space-y-3">
-        <CropStage image={url} aspect={aspect} state={state} onChange={setState} onArea={setArea} />
+        <CropStage image={url} aspect={aspect} state={state} onChange={setState} onArea={(_, pct) => setArea(pct)} />
         <p className="text-center text-xs text-slate-500">Drag to move, pinch or scroll to zoom.</p>
       </div>
       <Card className="space-y-5 self-start">
@@ -122,8 +137,9 @@ export default function CropTool() {
         )}
         <div className="space-y-2 border-t border-slate-200 pt-4 dark:border-slate-800">
           <Button className="w-full" onClick={save} busy={saving} disabled={!area} icon={<Download className="size-4" />}>
-            Download {area && `${Math.round(area.width)}×${Math.round(area.height)}`}
+            Download {img && area && cropLabel(img, area, state.rotation)}
           </Button>
+          {error && <Alert>{error}</Alert>}
           <Button variant="ghost" className="w-full" onClick={() => setState(initialCrop)}>
             Reset
           </Button>
@@ -134,4 +150,9 @@ export default function CropTool() {
       </Card>
     </div>
   )
+}
+
+function cropLabel(img: ImageBitmap, pct: Area, rotation: number) {
+  const px = percentToPixels(img, pct, rotation)
+  return `${Math.round(px.width)}×${Math.round(px.height)}`
 }

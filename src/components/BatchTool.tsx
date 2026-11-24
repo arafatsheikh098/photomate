@@ -1,6 +1,6 @@
 import { Archive, CircleCheck, Download, Trash, X } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { loadImage } from '../lib/canvas'
+import { loadImage, originalSizeOf } from '../lib/canvas'
 import { downloadBlob, zipFiles } from '../lib/files'
 import { formatBytes, savedPercent } from '../lib/format'
 import { Compare } from './Compare'
@@ -111,11 +111,16 @@ export function BatchTool({
       try {
         img = await loadImage(it.file)
         const res = await process(it.file, img)
+        const orig = originalSizeOf(img)
+        if (orig.width !== img.width) {
+          const scaled = `Very large photo: reduced from ${orig.width}×${orig.height} to fit this browser.`
+          res.note = res.note ? `${scaled} ${res.note}` : scaled
+        }
         if (it.result) URL.revokeObjectURL(it.result.url)
         patch(it.id, {
           status: 'done',
-          width: img.width,
-          height: img.height,
+          width: orig.width,
+          height: orig.height,
           result: { ...res, url: URL.createObjectURL(res.blob) },
         })
       } catch (e) {

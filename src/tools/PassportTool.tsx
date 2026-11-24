@@ -7,11 +7,11 @@ import { Dropzone } from '../components/Dropzone'
 import { Alert, Button, Card, ColorPicker, Field, NumberInput, Progress, Segmented, Select, Slider, Toggle } from '../components/ui'
 import { useObjectUrl } from '../hooks/useObjectUrl'
 import { composite, removeBackground, type RemovalProgress } from '../lib/bgRemoval'
-import { cropTransformed, encode, loadImage, render, sizeOf, toBlob } from '../lib/canvas'
+import { cropTransformed, encode, loadImage, percentToPixels, render, toBlob } from '../lib/canvas'
 import { encodeToTarget } from '../lib/compress'
 import { downloadBlob } from '../lib/files'
 import { formatBytes, renameFile } from '../lib/format'
-import { mmToPx, rotatedBounds } from '../lib/geometry'
+import { mmToPx } from '../lib/geometry'
 import { sheetToPdf } from '../lib/pdf'
 import { PAPER_SIZES, PHOTO_PRESETS, type PhotoPreset } from '../lib/presets'
 import { renderSheet } from '../lib/sheet'
@@ -64,6 +64,7 @@ export default function PassportTool() {
   const [copies, setCopies] = useState<number | ''>('')
   const [busy, setBusy] = useState<string | null>(null)
   const [lastSize, setLastSize] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => () => original?.close(), [original])
   useEffect(() => () => cutout?.close(), [cutout])
@@ -107,14 +108,8 @@ export default function PassportTool() {
 
   const finalPhoto = useMemo(() => {
     if (!source || !area) return null
-    // Percentages survive swapping between the full-size original and the smaller cut-out.
-    const box = rotatedBounds(sizeOf(source), state.rotation)
-    const px = {
-      x: (area.x / 100) * box.width,
-      y: (area.y / 100) * box.height,
-      width: (area.width / 100) * box.width,
-      height: (area.height / 100) * box.height,
-    }
+    // Percentages survive swapping between the working copy and the smaller cut-out.
+    const px = percentToPixels(source, area, state.rotation)
     const cropped = cropTransformed(source, px, state.rotation, { h: state.flipH, v: state.flipV }, { width: preset.widthPx, height: preset.heightPx })
     const filter = brightness !== 100 || contrast !== 100 ? `brightness(${brightness}%) contrast(${contrast}%)` : undefined
     return render(cropped, { size: { width: preset.widthPx, height: preset.heightPx }, background: '#ffffff', filter })
@@ -180,13 +175,21 @@ export default function PassportTool() {
         <Dropzone
           title="Choose a portrait photo"
           onFiles={async ([f]) => {
-            setOriginal(await loadImage(f))
+            setLoadError(null)
+            try {
+              // Output is at most ~830 px tall, so a 2400 px working copy is plenty and keeps edits fast.
+              setOriginal(await loadImage(f, { maxSide: 2400 }))
+            } catch (e) {
+              setLoadError(e instanceof Error ? e.message : 'Could not open this image.')
+              return
+            }
             setFile(f)
             setCutout(null)
             setReplaceBg(false)
             setState(initialCrop)
           }}
         />
+        {loadError && <Alert>{loadError}</Alert>}
         <Alert tone="info">
           Use a well-lit, front-facing photo with a plain background, taken from about 1.5 m away. Requirements change, so
           check the issuing authority’s current rules before you submit.

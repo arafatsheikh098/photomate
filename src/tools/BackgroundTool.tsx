@@ -37,7 +37,7 @@ export default function BackgroundTool() {
     setCutout(null)
     setProgress({ stage: 'download', fraction: null })
     try {
-      const orig = await loadImage(f)
+      const orig = await loadImage(f, { maxSide: 2048 })
       setOriginal(orig)
       const blob = await removeBackground(f, q, setProgress)
       setCutout(await createImageBitmap(blob))
@@ -151,7 +151,13 @@ export default function BackgroundTool() {
             <Field label="Blur strength">{(id) => <Slider id={id} value={blur} onChange={setBlur} min={2} max={40} format={(v) => `${v}px`} />}</Field>
           )}
           {kind === 'image' && (
-            <Dropzone compact title={bgImage ? 'Change background photo' : 'Choose a background photo'} onFiles={async ([f]) => setBgImage(await loadImage(f))} />
+            <Dropzone compact title={bgImage ? 'Change background photo' : 'Choose a background photo'} onFiles={async ([f]) => {
+              try {
+                setBgImage(await loadImage(f, { maxSide: 2048 }))
+              } catch (e) {
+                setError(e instanceof Error ? e.message : 'Could not open this image.')
+              }
+            }} />
           )}
 
           <FormatPicker value={format} onChange={setFormat} />

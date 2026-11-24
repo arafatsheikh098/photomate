@@ -92,6 +92,19 @@ export function rotatedBounds(size: Size, deg: number): Size {
   }
 }
 
+/**
+ * Largest size with the same aspect ratio that stays within a pixel budget and an
+ * optional longest-side cap. Never upscales.
+ */
+export function fitWithin(size: Size, maxPixels: number, maxSide = Infinity): Size {
+  const byArea = Math.sqrt(maxPixels / (size.width * size.height))
+  const bySide = maxSide / Math.max(size.width, size.height)
+  const f = Math.min(1, byArea, bySide)
+  if (f >= 1) return { width: size.width, height: size.height }
+  // floor so rounding can never push the result back over the budget
+  return { width: Math.max(1, Math.floor(size.width * f)), height: Math.max(1, Math.floor(size.height * f)) }
+}
+
 export const MM_PER_INCH = 25.4
 
 export function mmToPx(mm: number, dpi: number): number {

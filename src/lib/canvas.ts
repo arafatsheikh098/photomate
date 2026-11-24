@@ -1,17 +1,37 @@
 import { isLossy, supportsAlpha, type OutputMime } from './format'
-import { placeImage, rotatedBounds, type FitMode, type Rect, type Size } from './geometry'
+import { fitWithin, placeImage, rotatedBounds, type FitMode, type Rect, type Size } from './geometry'
 
 export type Drawable = ImageBitmap | HTMLCanvasElement | HTMLImageElement
 
-/** Browsers refuse canvases much past this many pixels (iOS Safari is the strictest). */
-export const MAX_CANVAS_PIXELS = 16_777_216
+/**
+ * Canvas area browsers will actually allocate. iOS/iPadOS WebKit refuses anything over
+ * 16.7 MP; desktop and Android allow far more, but very large canvases still risk running
+ * out of memory, so they get a generous but finite budget.
+ */
+export const MAX_CANVAS_PIXELS = (() => {
+  if (typeof navigator === 'undefined') return 16_777_216
+  const ios = /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  return ios ? 16_777_216 : 100_000_000
+})()
 
 export class ImageLoadError extends Error {}
 
-/** Decodes a file, applying its EXIF orientation so phone photos come out upright. */
-export async function loadImage(file: Blob): Promise<ImageBitmap> {
+/** Dimensions of the file before loadImage scaled it down, if it did. */
+const originalSizes = new WeakMap<ImageBitmap, Size>()
+
+export function originalSizeOf(img: ImageBitmap): Size {
+  return originalSizes.get(img) ?? { width: img.width, height: img.height }
+}
+
+/**
+ * Decodes a file, applying its EXIF orientation so phone photos come out upright.
+ * Photos larger than the browser's canvas limit (or `maxSide`) are scaled down here, once,
+ * so every tool can work with them; 48–200 MP phone shots would otherwise fail.
+ */
+export async function loadImage(file: Blob, opts: { maxSide?: number } = {}): Promise<ImageBitmap> {
+  let full: ImageBitmap
   try {
-    return await createImageBitmap(file, { imageOrientation: 'from-image' })
+    full = await createImageBitmap(file, { imageOrientation: 'from-image' })
   } catch {
     const isHeic = /hei[cf]/i.test(file.type) || (file instanceof File && /\.hei[cf]$/i.test(file.name))
     throw new ImageLoadError(
@@ -19,6 +39,15 @@ export async function loadImage(file: Blob): Promise<ImageBitmap> {
         ? 'HEIC photos can only be opened in Safari. On iPhone, set Camera → Formats → Most Compatible, or share the photo as JPG.'
         : 'This file could not be read as an image.',
     )
+  }
+  const target = fitWithin(full, MAX_CANVAS_PIXELS, opts.maxSide)
+  if (target.width === full.width && target.height === full.height) return full
+  try {
+    const small = await createImageBitmap(full, { resizeWidth: target.width, resizeHeight: target.height, resizeQuality: 'high' })
+    originalSizes.set(small, { width: full.width, height: full.height })
+    return small
+  } finally {
+    full.close()
   }
 }
 
@@ -98,7 +127,11 @@ export function render(img: Drawable, opts: RenderOptions): HTMLCanvasElement {
   return canvas
 }
 
-/** Crops a region (in the rotated image's coordinates) after rotating and flipping. */
+/**
+ * Crops a region (in the rotated image's coordinates) after rotating and flipping.
+ * Only the cropped area is ever allocated, never the whole rotated image, so this
+ * stays cheap even for very large photos.
+ */
 export function cropTransformed(
   img: Drawable,
   area: Rect,
@@ -108,25 +141,30 @@ export function cropTransformed(
 ): HTMLCanvasElement {
   const size = sizeOf(img)
   const bounds = rotatedBounds(size, rotation)
-  const stage = createCanvas(bounds.width, bounds.height)
-  const ctx = context2d(stage)
+  const w = Math.max(1, Math.round(area.width))
+  const h = Math.max(1, Math.round(area.height))
+  const out = fitWithin({ width: w, height: h }, MAX_CANVAS_PIXELS)
+  const canvas = createCanvas(out.width, out.height)
+  const ctx = context2d(canvas)
+  ctx.scale(out.width / w, out.height / h)
+  ctx.translate(-Math.round(area.x), -Math.round(area.y))
   ctx.translate(bounds.width / 2, bounds.height / 2)
   ctx.rotate((rotation * Math.PI) / 180)
   ctx.scale(flip.h ? -1 : 1, flip.v ? -1 : 1)
   ctx.drawImage(img, -size.width / 2, -size.height / 2)
+  if (!output || (output.width === canvas.width && output.height === canvas.height)) return canvas
+  return render(canvas, { size: output })
+}
 
-  const x = Math.round(area.x)
-  const y = Math.round(area.y)
-  const w = Math.max(1, Math.round(area.width))
-  const h = Math.max(1, Math.round(area.height))
-  if (!output || (output.width === w && output.height === h)) {
-    const out = createCanvas(w, h)
-    context2d(out).drawImage(stage, x, y, w, h, 0, 0, w, h)
-    return out
+/** Converts a crop given in percent of the rotated image into pixels of `img`. */
+export function percentToPixels(img: Drawable, pct: Rect, rotation: number): Rect {
+  const box = rotatedBounds(sizeOf(img), rotation)
+  return {
+    x: (pct.x / 100) * box.width,
+    y: (pct.y / 100) * box.height,
+    width: (pct.width / 100) * box.width,
+    height: (pct.height / 100) * box.height,
   }
-  const cropped = createCanvas(w, h)
-  context2d(cropped).drawImage(stage, x, y, w, h, 0, 0, w, h)
-  return render(cropped, { size: output })
 }
 
 export function toBlob(canvas: HTMLCanvasElement, mime: OutputMime, quality?: number): Promise<Blob> {

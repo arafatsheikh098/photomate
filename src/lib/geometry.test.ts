@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeResize, mmToPx, placeImage, pxToMm, rotatedBounds } from './geometry'
+import { computeResize, fitWithin, mmToPx, placeImage, pxToMm, rotatedBounds } from './geometry'
 
 const src = { width: 4000, height: 3000 }
 
@@ -65,5 +65,21 @@ describe('units and rotation', () => {
   it('computes rotated bounds', () => {
     expect(rotatedBounds({ width: 400, height: 300 }, 90)).toEqual({ width: 300, height: 400 })
     expect(rotatedBounds({ width: 100, height: 100 }, 45)).toEqual({ width: 141, height: 141 })
+  })
+})
+
+describe('fitWithin', () => {
+  it('leaves images inside the budget alone', () => {
+    expect(fitWithin({ width: 3000, height: 4000 }, 16_777_216)).toEqual({ width: 3000, height: 4000 })
+  })
+
+  it('shrinks a 48 MP photo under the iOS canvas limit, keeping the ratio', () => {
+    const r = fitWithin({ width: 6000, height: 8000 }, 16_777_216)
+    expect(r.width * r.height).toBeLessThanOrEqual(16_777_216)
+    expect(r.width / r.height).toBeCloseTo(0.75, 2)
+  })
+
+  it('applies a longest-side cap', () => {
+    expect(fitWithin({ width: 4000, height: 6000 }, Infinity, 2400)).toEqual({ width: 1600, height: 2400 })
   })
 })

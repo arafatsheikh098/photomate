@@ -68,6 +68,7 @@ export default function SignatureTool() {
   const [maxKB, setMaxKB] = useState<number | ''>(SIGNATURE_PRESETS[0].maxKB ?? '')
   const [saving, setSaving] = useState(false)
   const [lastSize, setLastSize] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => () => img?.close(), [img])
 
@@ -126,12 +127,19 @@ export default function SignatureTool() {
         <Dropzone
           title="Choose a photo of your signature"
           onFiles={async ([f]) => {
-            setImg(await loadImage(f))
+            setLoadError(null)
+            try {
+              setImg(await loadImage(f, { maxSide: 3200 }))
+            } catch (e) {
+              setLoadError(e instanceof Error ? e.message : 'Could not open this image.')
+              return
+            }
             setFile(f)
             setRotation(0)
             setOffset(0)
           }}
         />
+        {loadError && <Alert>{loadError}</Alert>}
         <Alert tone="info">Sign on plain white paper with a dark pen, then take the photo from straight above in good light.</Alert>
       </div>
     )
