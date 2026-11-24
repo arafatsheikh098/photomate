@@ -34,6 +34,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // Background removal runs on the WASM backend only, so the WebGPU build is never loaded.
+        globIgnores: ['**/ort.webgpu*'],
         // The background-removal runtime chunk is large; precache it so the tool works offline.
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         runtimeCaching: [
