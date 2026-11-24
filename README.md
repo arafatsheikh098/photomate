@@ -2,20 +2,20 @@
 
 <img src="public/favicon.svg" width="72" alt="" />
 
-# Chobi · ছবি
+# PhotoMate
 
-**The everyday image toolkit that never uploads your photos.**
+**Free image resizer, compressor and passport photo maker that never uploads your photos.**
 
 Compress to an exact KB size, resize, convert, crop, remove backgrounds, make passport and job-form photos,
 clean up signatures and turn images into PDFs. Everything runs in the browser.
 
-[**Open the app →**](https://arafatsheikh098.github.io/chobi/)
+[**Open the app →**](https://arafatsheikh098.github.io/photomate/)
 
-[![CI & deploy](https://github.com/arafatsheikh098/chobi/actions/workflows/ci.yml/badge.svg)](https://github.com/arafatsheikh098/chobi/actions/workflows/ci.yml)
+[![CI & deploy](https://github.com/arafatsheikh098/photomate/actions/workflows/ci.yml/badge.svg)](https://github.com/arafatsheikh098/photomate/actions/workflows/ci.yml)
 ![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue)
 ![PWA](https://img.shields.io/badge/PWA-offline-0f766e)
 
-<img src="docs/home.png" alt="Chobi home page listing eight image tools" width="820" />
+<img src="docs/home.png" alt="PhotoMate home page listing eight image tools" width="820" />
 
 </div>
 
@@ -23,7 +23,7 @@ clean up signatures and turn images into PDFs. Everything runs in the browser.
 
 Online forms want _"photo 300×300 px, max 100 KB"_ and _"signature 300×80 px, max 60 KB"_. Visa portals want
 35×45 mm on a white background. Most websites that do this upload your face and ID documents to a server,
-add watermarks or ask you to sign up. Chobi does all of it on your own device, for free, and keeps working offline.
+add watermarks or ask you to sign up. PhotoMate does all of it on your own device, for free, and keeps working offline.
 
 ## Tools
 
@@ -65,8 +65,15 @@ add watermarks or ask you to sign up. Chobi does all of it on your own device, f
 - **Print sheets** ([`src/lib/layout.ts`](src/lib/layout.ts)). The photo is packed on the paper in both
   orientations and the layout that fits more copies wins. The sheet is rendered at 300 DPI and exported as an
   exact-size PDF, so "Actual size" printing gives true millimetres.
-- **Offline PWA.** Installable. Every tool is a lazily loaded route chunk, so the first page load stays small.
-  The service worker caches the rest in the background so every tool works without a connection.
+- **Findable.** Each tool has its own URL (`/passport-photo/`, `/compress-image/` …). At build time a real HTML file is
+  generated for each one, with its own title, description, canonical link and social preview, plus `sitemap.xml` and
+  `robots.txt`. Search engines can index every tool, even though GitHub Pages only serves static files.
+- **Offline PWA that never goes stale.** Installable. Every tool is a lazily loaded route chunk, so the first page
+  load stays small. The service worker caches the rest in the background so every tool works without a connection.
+  Each build publishes a `version.json`. Open tabs compare it with their own build: an idle tab reloads itself, and a
+  tab with an image open shows a "new version" bar instead. Visitors never keep running an old cached build.
+- **Large photos.** 48–200 MP phone shots are scaled once at decode time to the browser's canvas limit (16.7 MP on
+  iOS). Crops allocate only the cropped region.
 
 ## Tech
 
@@ -77,20 +84,22 @@ vite-plugin-pwa · Vitest · Playwright · GitHub Actions → GitHub Pages
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173/chobi/
+npm run dev        # http://localhost:5173/photomate/
 npm test           # unit tests (Vitest)
-npm run e2e        # end-to-end tests in Chromium (Playwright); run `npx playwright install chromium` once
+npm run e2e        # end-to-end tests in Chromium, WebKit (Safari) and phone viewports; run `npx playwright install chromium webkit` once
 npm run build      # type-check + production build into dist/
 ```
 
-The end-to-end suite runs every tool in a real browser against the production build. It checks the actual
-output files: dimensions, the KB limit, PDF page count and orientation, and ZIP contents. Test images are drawn
+The end-to-end suite runs every tool in Chromium and WebKit, on both desktop and phone viewports, against the
+production build. It checks the actual output files: dimensions, the KB limit, PDF page count and orientation, and
+ZIP contents. It also covers 48 MP photos and the crawlable per-tool pages. Test images are drawn
 in the browser, so the repo holds no binary fixtures.
 
 ### Deploying your own copy
 
 1. Fork the repo, then under **Settings → Pages** set **Source: GitHub Actions**.
-2. Push to `main`. The workflow tests, builds with `BASE=/<repo-name>/` and deploys.
+2. Push to `main`. The workflow tests, builds with `BASE=/<repo-name>/` and deploys. Canonical URLs and the sitemap
+   use `https://<owner>.github.io`; set `SITE_ORIGIN` for a custom domain.
 
 For a custom domain or a root deployment, build with `BASE=/ npm run build`.
 
@@ -106,7 +115,7 @@ e2e/            Playwright specs and in-browser fixture generation
 
 ## Privacy
 
-Chobi has no backend, analytics or cookies. The only network request beyond the site itself is the one-time
+PhotoMate has no backend, analytics or cookies. The only network request beyond the site itself is the one-time
 download of the background-removal model from IMG.LY's CDN. It happens only when you use that tool, and it
 downloads model weights; your image is never sent.
 
