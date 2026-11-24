@@ -29,7 +29,8 @@ export function CropStage({
   aspect: number
   state: CropState
   onChange: (s: CropState) => void
-  onArea: (pixels: Area) => void
+  /** Crop area as percentages of the rotated image, and in its pixels. */
+  onArea: (pixels: Area, percent: Area) => void
   overlay?: (size: { width: number; height: number }) => ReactNode
   className?: string
 }) {
@@ -51,7 +52,7 @@ export function CropStage({
         onCropChange={(c) => onChange({ ...state, crop: c })}
         onZoomChange={(z) => onChange({ ...state, zoom: z })}
         onRotationChange={(r) => onChange({ ...state, rotation: r })}
-        onCropComplete={(_, px) => onArea(px)}
+        onCropComplete={(pct, px) => onArea(px, pct)}
         onCropSizeChange={setCropSize}
       />
       {overlay && cropSize && (
