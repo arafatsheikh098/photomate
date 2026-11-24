@@ -49,7 +49,10 @@ export function Logo() {
 
 export function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
-  useEffect(() => window.scrollTo(0, 0), [pathname])
+  // Braces matter: newer browsers return a Promise from scrollTo, which React would treat as a cleanup.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
 
   return (
     <div className="flex min-h-dvh flex-col">
