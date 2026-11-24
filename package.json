@@ -1,8 +1,18 @@
 {
   "name": "chobi",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Private, in-browser image toolkit: compress to KB, resize, convert, crop, remove backgrounds, passport photos, signatures and images to PDF.",
+  "license": "AGPL-3.0-or-later",
+  "homepage": "https://arafatsheikh098.github.io/chobi/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arafatsheikh098/chobi.git"
+  },
   "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
