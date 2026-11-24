@@ -46,24 +46,36 @@ export function otsuThreshold(gray: Uint8Array): number {
   return Math.round((first + last) / 2)
 }
 
-/** Smallest rectangle containing every pixel darker than `threshold`, padded and clamped. */
-export function inkBounds(gray: Uint8Array, width: number, height: number, threshold: number, pad = 0): Rect | null {
-  let minX = width
-  let minY = height
-  let maxX = -1
-  let maxY = -1
+/**
+ * Bounding box of the ink, padded and clamped. Rows and columns with fewer than
+ * `minCount` ink pixels are ignored so stray specks of dust do not stretch the box.
+ */
+export function inkBounds(
+  gray: Uint8Array,
+  width: number,
+  height: number,
+  threshold: number,
+  pad = 0,
+  minCount = 1,
+): Rect | null {
+  const cols = new Uint32Array(width)
+  const rows = new Uint32Array(height)
   for (let y = 0; y < height; y++) {
     const row = y * width
     for (let x = 0; x < width; x++) {
       if (gray[row + x] <= threshold) {
-        if (x < minX) minX = x
-        if (x > maxX) maxX = x
-        if (y < minY) minY = y
-        if (y > maxY) maxY = y
+        cols[x]++
+        rows[y]++
       }
     }
   }
-  if (maxX < 0) return null
+  const first = (a: Uint32Array) => a.findIndex((n) => n >= minCount)
+  const last = (a: Uint32Array) => a.findLastIndex((n) => n >= minCount)
+  const minX = first(cols)
+  const minY = first(rows)
+  if (minX < 0 || minY < 0) return null
+  const maxX = last(cols)
+  const maxY = last(rows)
   const x = Math.max(0, minX - pad)
   const y = Math.max(0, minY - pad)
   return {
@@ -72,6 +84,18 @@ export function inkBounds(gray: Uint8Array, width: number, height: number, thres
     width: Math.min(width, maxX + pad + 1) - x,
     height: Math.min(height, maxY + pad + 1) - y,
   }
+}
+
+/**
+ * Evens out shadows and uneven lighting by dividing each pixel by a blurred copy of the page.
+ * Paper becomes ~255 everywhere while ink stays dark relative to its surroundings.
+ */
+export function flattenLighting(gray: Uint8Array, background: Uint8Array): Uint8Array {
+  const out = new Uint8Array(gray.length)
+  for (let i = 0; i < gray.length; i++) {
+    out[i] = Math.min(255, Math.round((gray[i] * 255) / Math.max(background[i], 1)))
+  }
+  return out
 }
 
 export interface InkOptions {

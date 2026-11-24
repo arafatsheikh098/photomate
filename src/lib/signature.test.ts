@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cleanSignature, inkBounds, otsuThreshold, toGray } from './signature'
+import { cleanSignature, flattenLighting, inkBounds, otsuThreshold, toGray } from './signature'
 
 /** 10×10 light-grey "paper" with a dark 3×2 stroke at (4,5). */
 function sample() {
@@ -44,5 +44,25 @@ describe('signature cleanup', () => {
     const gray = toGray(rgba)
     const out = cleanSignature(rgba, gray, { threshold: otsuThreshold(gray), softness: 1, ink: 'original', transparent: true })
     expect(out[3]).toBe(0)
+  })
+})
+
+describe('inkBounds noise filtering', () => {
+  it('ignores isolated specks when a minimum count is set', () => {
+    const w = 20
+    const gray = new Uint8Array(w * w).fill(255)
+    // a 6-pixel-wide stroke on rows 8–10 and a single speck at (19, 0)
+    for (let y = 8; y <= 10; y++) for (let x = 5; x <= 10; x++) gray[y * w + x] = 0
+    gray[19] = 0
+    expect(inkBounds(gray, w, w, 128)).toEqual({ x: 5, y: 0, width: 15, height: 11 })
+    expect(inkBounds(gray, w, w, 128, 0, 2)).toEqual({ x: 5, y: 8, width: 6, height: 3 })
+  })
+})
+
+describe('flattenLighting', () => {
+  it('lifts shadowed paper to white while keeping ink dark', () => {
+    const gray = Uint8Array.from([120, 40, 240])
+    const bg = Uint8Array.from([120, 120, 240])
+    expect(Array.from(flattenLighting(gray, bg))).toEqual([255, 85, 255])
   })
 })
