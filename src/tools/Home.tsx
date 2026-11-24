@@ -22,11 +22,11 @@ export default function Home() {
     <div className="space-y-10">
       <section className="mx-auto max-w-3xl pt-4 text-center">
         <h1 className="text-4xl font-bold tracking-tight text-balance text-slate-900 sm:text-5xl dark:text-white">
-          Every everyday image tool, <span className="text-brand-600 dark:text-brand-400">private by design</span>
+          Free image resizer, compressor &amp; <span className="text-brand-600 dark:text-brand-400">passport photo maker</span>
         </h1>
         <p className="mt-4 text-lg text-pretty text-slate-600 dark:text-slate-400">
-          Compress to 100 KB, resize for forms, make passport photos, remove backgrounds and build PDFs. It is free, has
-          no watermark, and runs entirely on your device.
+          Compress to 100 KB, resize for forms, remove backgrounds, fix signatures and build PDFs. Private by design:
+          everything runs on your device, nothing is uploaded, and there is no watermark or sign-up.
         </p>
         <div className="relative mx-auto mt-8 max-w-md">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-slate-400" />
@@ -45,7 +45,7 @@ export default function Home() {
         {tools.map((t) => (
           <Link
             key={t.slug}
-            to={`/${t.slug}`}
+            to={`/${t.slug}/`}
             className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-brand-700"
           >
             <span className={cx('inline-flex rounded-xl p-3', t.tint)}>

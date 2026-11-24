@@ -2,19 +2,30 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0f766e" />
-    <meta
-      name="description"
-      content="Free, private image toolkit: resize, compress to KB, convert JPG/PNG/WebP, crop, remove background, passport photos, signature cleanup and images to PDF. Nothing is uploaded."
-    />
-    <title>Chobi — Free in-browser image toolkit</title>
+    <!--seo-->
+    <title>PhotoMate — Free Image Resizer, Compressor & Passport Photo Maker</title>
+    <meta name="description" content="Free, private image tools in your browser." />
+    <!--/seo-->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "PhotoMate",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Any (web browser)",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "description": "Compress images to an exact KB size, resize, convert, crop, remove backgrounds, make passport photos, resize signatures and turn images into PDF, all on your device.",
+        "featureList": ["Compress image to KB", "Image resizer", "Image converter", "Passport size photo maker", "Background remover", "Signature resizer", "Images to PDF"]
+      }
+    </script>
     <script>
       // Apply the saved theme before first paint to avoid a flash.
       try {
-        const t = localStorage.getItem('chobi-theme')
+        const t = localStorage.getItem('photomate-theme')
         if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) {
           document.documentElement.classList.add('dark')
         }

@@ -9,7 +9,7 @@ function hasWorkInProgress() {
   return !!document.querySelector('main img, main canvas')
 }
 
-const RELOADED_FOR = 'chobi-reloaded-for'
+const RELOADED_FOR = 'photomate-reloaded-for'
 
 /** Reload now if nothing is open; otherwise show the "new version" bar. */
 function applyUpdate(target: string) {
@@ -77,7 +77,8 @@ export function startServiceWorker() {
   if (!('serviceWorker' in navigator) || import.meta.env.DEV) return
   registerSW({
     immediate: true,
-    onNeedReload: () => applyUpdate('sw-update'),
+    // A unique key: the loop guard must not block a later, genuine update in this session.
+    onNeedReload: () => applyUpdate(`sw-${Date.now()}`),
   })
   checkVersion()
   document.addEventListener('visibilitychange', () => {
@@ -94,7 +95,7 @@ export function subscribeUpdate(l: Listener) {
 
 export const isUpdateReady = () => updateReady
 
-const CHUNK_RELOAD = 'chobi-chunk-reload'
+const CHUNK_RELOAD = 'photomate-chunk-reload'
 
 /**
  * Lazy-import wrapper for route chunks. After a deploy, an open tab may ask for a chunk

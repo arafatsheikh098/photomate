@@ -2,10 +2,11 @@ import { Lock, Moon, RefreshCw, Sun } from 'lucide-react'
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { isUpdateReady, subscribeUpdate } from '../pwa'
+import { HOME_TITLE } from '../tools/meta'
 import { TOOLS } from '../tools/registry'
 import { cx } from './cx'
 
-const REPO_URL = 'https://github.com/arafatsheikh098/chobi'
+const REPO_URL = 'https://github.com/arafatsheikh098/photomate'
 
 function GitHubMark({ className }: { className?: string }) {
   return (
@@ -20,7 +21,7 @@ function ThemeToggle() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark)
     try {
-      localStorage.setItem('chobi-theme', dark ? 'dark' : 'light')
+      localStorage.setItem('photomate-theme', dark ? 'dark' : 'light')
     } catch {
       /* private mode */
     }
@@ -42,7 +43,7 @@ export function Logo() {
     <Link to="/" className="flex items-center gap-2 font-semibold text-slate-900 dark:text-white">
       <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="size-8" />
       <span className="text-lg tracking-tight">
-        Chobi <span className="font-normal text-slate-400">ছবি</span>
+        Photo<span className="text-brand-600 dark:text-brand-400">Mate</span>
       </span>
     </Link>
   )
@@ -54,7 +55,7 @@ function UpdateBar() {
   return (
     <div role="status" className="bg-brand-700 text-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2 text-sm">
-        <span>A new version of Chobi is ready. Save your work, then reload.</span>
+        <span>A new version of PhotoMate is ready. Save your work, then reload.</span>
         <button
           type="button"
           onClick={() => window.location.reload()}
@@ -72,6 +73,8 @@ export function Layout({ children }: { children: ReactNode }) {
   // Braces matter: newer browsers return a Promise from scrollTo, which React would treat as a cleanup.
   useEffect(() => {
     window.scrollTo(0, 0)
+    const tool = TOOLS.find((t) => pathname.replace(/\/$/, '') === `/${t.slug}`)
+    document.title = tool ? `${tool.title} | PhotoMate` : HOME_TITLE
   }, [pathname])
 
   return (
@@ -99,7 +102,7 @@ export function Layout({ children }: { children: ReactNode }) {
               {TOOLS.map((t) => (
                 <li key={t.slug}>
                   <NavLink
-                    to={`/${t.slug}`}
+                    to={`/${t.slug}/`}
                     className={({ isActive }) =>
                       cx(
                         'flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition',

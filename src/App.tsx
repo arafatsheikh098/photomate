@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { HashRouter, Link, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { Layout, ToolHeader } from './components/Layout'
 import { Progress } from './components/ui'
@@ -19,8 +19,9 @@ function NotFound() {
 
 export default function App() {
   return (
-    // Hash routing: GitHub Pages serves a single index.html and has no rewrite rules.
-    <HashRouter>
+    // Real paths (/passport-photo/) so each tool can be found in search. The build writes an
+    // index.html for every tool, so GitHub Pages serves them without rewrite rules.
+    <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
       <Layout>
         <Suspense fallback={<Progress value={null} label="Loading tool…" />}>
           <Routes>
@@ -28,10 +29,10 @@ export default function App() {
             {TOOLS.map((t) => (
               <Route
                 key={t.slug}
-                path={`/${t.slug}`}
+                path={`/${t.slug}/`}
                 element={
                   <>
-                    <ToolHeader title={t.name} description={t.blurb} icon={t.icon} tint={t.tint} />
+                    <ToolHeader title={t.heading} description={t.blurb} icon={t.icon} tint={t.tint} />
                     <ErrorBoundary key={t.slug}>
                       <t.Component />
                     </ErrorBoundary>
@@ -43,6 +44,6 @@ export default function App() {
           </Routes>
         </Suspense>
       </Layout>
-    </HashRouter>
+    </BrowserRouter>
   )
 }

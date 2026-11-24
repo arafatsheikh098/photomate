@@ -1,13 +1,13 @@
 {
-  "name": "chobi",
+  "name": "photomate",
   "private": true,
   "version": "1.0.0",
   "description": "Private, in-browser image toolkit: compress to KB, resize, convert, crop, remove backgrounds, passport photos, signatures and images to PDF.",
   "license": "AGPL-3.0-or-later",
-  "homepage": "https://arafatsheikh098.github.io/chobi/",
+  "homepage": "https://arafatsheikh098.github.io/photomate/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/arafatsheikh098/chobi.git"
+    "url": "https://github.com/arafatsheikh098/photomate.git"
   },
   "type": "module",
   "engines": {
