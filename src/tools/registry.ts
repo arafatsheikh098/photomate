@@ -1,5 +1,6 @@
 import { Crop, Eraser, FileText, IdCard, Minimize2, Repeat, Scaling, Signature, type LucideIcon } from 'lucide-react'
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react'
+import { importWithReload } from '../pwa'
 
 export interface ToolInfo {
   slug: string
@@ -20,7 +21,7 @@ export const TOOLS: ToolInfo[] = [
     icon: Minimize2,
     tint: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
     keywords: 'reduce size kb mb optimize',
-    Component: lazy(() => import('./CompressTool')),
+    Component: lazy(importWithReload(() => import('./CompressTool'))),
   },
   {
     slug: 'resize',
@@ -29,7 +30,7 @@ export const TOOLS: ToolInfo[] = [
     icon: Scaling,
     tint: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
     keywords: 'dimensions width height scale pixels',
-    Component: lazy(() => import('./ResizeTool')),
+    Component: lazy(importWithReload(() => import('./ResizeTool'))),
   },
   {
     slug: 'convert',
@@ -38,7 +39,7 @@ export const TOOLS: ToolInfo[] = [
     icon: Repeat,
     tint: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
     keywords: 'format jpg png webp avif exif',
-    Component: lazy(() => import('./ConvertTool')),
+    Component: lazy(importWithReload(() => import('./ConvertTool'))),
   },
   {
     slug: 'passport',
@@ -47,7 +48,7 @@ export const TOOLS: ToolInfo[] = [
     icon: IdCard,
     tint: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
     keywords: 'visa id job application teletalk print 4x6',
-    Component: lazy(() => import('./PassportTool')),
+    Component: lazy(importWithReload(() => import('./PassportTool'))),
   },
   {
     slug: 'remove-background',
@@ -56,7 +57,7 @@ export const TOOLS: ToolInfo[] = [
     icon: Eraser,
     tint: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
     keywords: 'bg remover cutout transparent ai',
-    Component: lazy(() => import('./BackgroundTool')),
+    Component: lazy(importWithReload(() => import('./BackgroundTool'))),
   },
   {
     slug: 'crop',
@@ -65,7 +66,7 @@ export const TOOLS: ToolInfo[] = [
     icon: Crop,
     tint: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300',
     keywords: 'cut aspect ratio rotate flip straighten',
-    Component: lazy(() => import('./CropTool')),
+    Component: lazy(importWithReload(() => import('./CropTool'))),
   },
   {
     slug: 'signature',
@@ -74,7 +75,7 @@ export const TOOLS: ToolInfo[] = [
     icon: Signature,
     tint: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
     keywords: 'sign job application form transparent',
-    Component: lazy(() => import('./SignatureTool')),
+    Component: lazy(importWithReload(() => import('./SignatureTool'))),
   },
   {
     slug: 'pdf',
@@ -83,7 +84,7 @@ export const TOOLS: ToolInfo[] = [
     icon: FileText,
     tint: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
     keywords: 'document scan merge a4 combine',
-    Component: lazy(() => import('./PdfTool')),
+    Component: lazy(importWithReload(() => import('./PdfTool'))),
   },
 ]
 

@@ -1,6 +1,7 @@
-import { Lock, Moon, Sun } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { Lock, Moon, RefreshCw, Sun } from 'lucide-react'
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
+import { isUpdateReady, subscribeUpdate } from '../pwa'
 import { TOOLS } from '../tools/registry'
 import { cx } from './cx'
 
@@ -47,6 +48,25 @@ export function Logo() {
   )
 }
 
+function UpdateBar() {
+  const ready = useSyncExternalStore(subscribeUpdate, isUpdateReady)
+  if (!ready) return null
+  return (
+    <div role="status" className="bg-brand-700 text-white">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2 text-sm">
+        <span>A new version of Chobi is ready. Save your work, then reload.</span>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="flex shrink-0 items-center gap-1.5 rounded-md bg-white/15 px-3 py-1 font-medium hover:bg-white/25"
+        >
+          <RefreshCw className="size-4" /> Reload
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   // Braces matter: newer browsers return a Promise from scrollTo, which React would treat as a cleanup.
@@ -56,6 +76,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-dvh flex-col">
+      <UpdateBar />
       <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/80 backdrop-blur dark:border-slate-800 dark:bg-slate-950/80">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
           <Logo />
@@ -106,6 +127,9 @@ export function Layout({ children }: { children: ReactNode }) {
             <Lock className="size-4" /> Your images never leave this device. No uploads, no account, no watermark.
           </p>
           <p>
+            <span title="Build" className="mr-2 font-mono text-xs opacity-70">
+              {__BUILD_ID__}
+            </span>
             Open source ·{' '}
             <a className="underline hover:text-slate-900 dark:hover:text-white" href={REPO_URL} target="_blank" rel="noreferrer">
               GitHub
