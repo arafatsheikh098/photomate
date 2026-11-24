@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, FileDown, RotateCw, Trash, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Dropzone } from '../components/Dropzone'
 import { Alert, Button, Card, Field, Segmented, Select } from '../components/ui'
 import { context2d, createCanvas, encode, loadImage } from '../lib/canvas'
@@ -224,7 +224,7 @@ export default function PdfTool() {
   )
 }
 
-function IconBtn({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
+function IconBtn({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
   return (
     <button
       type="button"
