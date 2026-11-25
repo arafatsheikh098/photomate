@@ -59,11 +59,19 @@ test.describe('batch tools', () => {
     expect(await imageSize(page, bytes, 'image/jpeg')).toEqual({ width: 1080, height: 1080 })
   })
 
-  test('convert PNG with transparency to WebP and JPG', async ({ page, browserName }) => {
+  test('convert PNG with transparency to WebP and JPG', async ({ page }) => {
     await page.goto('./convert-image/')
     await upload(page, [{ name: 'logo.png', buffer: await makeImage(page, 'transparent', 400, 300, 'image/png'), mimeType: 'image/png' }])
-    if (browserName === 'webkit') {
-      // Safari cannot encode WebP from a canvas; the option must be hidden and explained.
+    // Probe the engine the same way the app does: Safari on macOS cannot encode WebP from a
+    // canvas, but Playwright's Linux WebKit build can, so the browser name alone is not enough.
+    const canEncodeWebp = await page.evaluate(async () => {
+      const c = document.createElement('canvas')
+      c.width = c.height = 2
+      const blob = await new Promise<Blob | null>((r) => c.toBlob(r, 'image/webp', 0.8))
+      return blob?.type === 'image/webp'
+    })
+    if (!canEncodeWebp) {
+      // The option must be hidden and explained.
       await expect(page.getByRole('radio', { name: 'WebP' })).toHaveCount(0)
       await expect(page.getByText(/can.t save WebP/)).toBeVisible()
       return
